@@ -1,0 +1,716 @@
+<!doctype html>
+<title>Shugo Bench</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF2F6; --surface:#FFFFFF; --ink:#16212C; --ink-soft:#4B5A67; --ink-faint:#7C8A96;
+    --line:#D7DEE5; --line-soft:#E4E9EE;
+    --accent:#2C5F8A; --accent-soft:#DCE7EF; --accent-ink:#1D4665;
+    --true:#1E7A5C; --true-soft:#DEEFE7;
+    --false:#AE3A2E; --false-soft:#F6E2DE;
+    --shadow: 0 1px 2px rgba(22,33,44,.06), 0 8px 24px -12px rgba(22,33,44,.18);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0E161F; --surface:#151E28; --ink:#E7ECF0; --ink-soft:#9BAAB6; --ink-faint:#6B7A87;
+      --line:#26333F; --line-soft:#1D2934;
+      --accent:#6FA8D8; --accent-soft:#1C3348; --accent-ink:#BFE0FF;
+      --true:#4FBE95; --true-soft:#173328;
+      --false:#E1685C; --false-soft:#3A2320;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px -12px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0E161F; --surface:#151E28; --ink:#E7ECF0; --ink-soft:#9BAAB6; --ink-faint:#6B7A87;
+    --line:#26333F; --line-soft:#1D2934;
+    --accent:#6FA8D8; --accent-soft:#1C3348; --accent-ink:#BFE0FF;
+    --true:#4FBE95; --true-soft:#173328;
+    --false:#E1685C; --false-soft:#3A2320;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px -12px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  img{max-width:100%;}
+  ::selection{ background:var(--accent-soft); }
+
+  .label{
+    font-family:"Oswald",Impact,"Arial Narrow",sans-serif;
+    text-transform:uppercase; letter-spacing:.09em; font-weight:600;
+  }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+
+  a{ color:var(--accent); }
+
+  /* ---------- Header ---------- */
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1180px; margin:0 auto; padding:18px 20px 14px;
+    display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 28px;
+  }
+  .brand{ display:flex; flex-direction:column; gap:4px; min-width:220px; }
+  .brand h1{
+    margin:0; font-family:"Oswald",sans-serif; font-weight:700; font-size:1.7rem;
+    letter-spacing:.01em; text-wrap:balance; color:var(--ink);
+  }
+  .brand h1 .mark{ color:var(--accent); }
+  .brand p{ margin:0; color:var(--ink-soft); font-size:.92rem; max-width:46ch; }
+
+  .stats{ display:flex; gap:0; margin-left:auto; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .stat{ padding:8px 16px; text-align:center; border-right:1px solid var(--line); background:var(--surface); }
+  .stat:last-child{ border-right:none; }
+  .stat .n{ display:block; font-size:1.25rem; font-weight:600; }
+  .stat .l{ font-size:.65rem; color:var(--ink-faint); }
+  .stat.true .n{ color:var(--true); }
+  .stat.false .n{ color:var(--false); }
+
+  nav.tabs{ max-width:1180px; margin:0 auto; padding:0 20px; display:flex; gap:4px; }
+  nav.tabs button{
+    font-family:"Oswald",sans-serif; font-weight:500; font-size:.8rem;
+    letter-spacing:.06em; text-transform:uppercase;
+    background:none; border:none; color:var(--ink-soft); cursor:pointer;
+    padding:10px 14px; border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  nav.tabs button:hover{ color:var(--ink); }
+  nav.tabs button.active{ color:var(--accent); border-bottom-color:var(--accent); }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width:1180px; margin:0 auto; padding:14px 20px 0;
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  }
+  .search{
+    flex:1 1 240px; display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px;
+  }
+  .search:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .search svg{ flex:none; opacity:.55; }
+  .search input{
+    border:none; outline:none; background:none; color:var(--ink);
+    font-family:"Source Serif 4",serif; font-size:.95rem; width:100%;
+  }
+  .search input::placeholder{ color:var(--ink-faint); }
+
+  .pillgroup{ display:flex; gap:6px; }
+  .pill{
+    font-family:"Oswald",sans-serif; font-size:.75rem; letter-spacing:.04em; text-transform:uppercase;
+    padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .pill:hover{ border-color:var(--accent); color:var(--ink); }
+  .pill.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .pill.active.t{ background:var(--true); border-color:var(--true); color:#fff; }
+  .pill.active.f{ background:var(--false); border-color:var(--false); color:#fff; }
+
+  select#articleFilter{
+    font-family:"IBM Plex Mono",monospace; font-size:.82rem;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; max-width:220px;
+  }
+
+  .count-line{
+    max-width:1180px; margin:10px auto 0; padding:0 20px;
+    color:var(--ink-faint); font-size:.8rem; font-family:"IBM Plex Mono",monospace;
+  }
+
+  /* ---------- Question list ---------- */
+  main{ max-width:1180px; margin:0 auto; padding:14px 20px 60px; }
+
+  ul.qlist{ list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  li.qrow{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    overflow:hidden;
+  }
+  .qrow-head{
+    display:grid; grid-template-columns:52px 74px 1fr 150px 22px;
+    align-items:center; gap:14px; padding:12px 14px; cursor:pointer;
+  }
+  .qrow-head:hover{ background:var(--line-soft); }
+  .qnum{ font-family:"IBM Plex Mono",monospace; color:var(--ink-faint); font-size:.85rem; }
+  .verdict{
+    font-family:"Oswald",sans-serif; font-weight:600; font-size:.72rem; letter-spacing:.06em;
+    text-align:center; padding:4px 0; border-radius:6px;
+  }
+  .verdict.T{ background:var(--true-soft); color:var(--true); }
+  .verdict.F{ background:var(--false-soft); color:var(--false); }
+  .qtext{ color:var(--ink); font-size:.98rem; text-wrap:pretty; }
+  .qref{
+    font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--accent-ink);
+    background:var(--accent-soft); padding:4px 8px; border-radius:6px;
+    text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .chev{ color:var(--ink-faint); transition:transform .15s ease; justify-self:end; }
+  li.qrow.open .chev{ transform:rotate(90deg); }
+
+  .qrow-body{ border-top:1px solid var(--line-soft); padding:14px 14px 18px 14px; display:none; }
+  li.qrow.open .qrow-body{ display:block; }
+  .langs{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .langs > div{ font-size:.88rem; color:var(--ink-soft); }
+  .langs .lbl{ display:block; margin-bottom:3px; }
+  .rulepanel{
+    background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+  }
+  .rulepanel h4{
+    margin:0 0 8px; font-family:"Oswald",sans-serif; font-size:.78rem; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--accent);
+  }
+  .rulesec{ margin:0 0 10px; padding-bottom:10px; border-bottom:1px dashed var(--line); }
+  .rulesec:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+  .rulesec .secno{ font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); margin-right:6px; }
+  .rulesec p{ margin:2px 0 0; font-size:.92rem; color:var(--ink); }
+  .noref{ color:var(--ink-faint); font-size:.85rem; font-style:italic; }
+
+  /* ---------- Rules index tab ---------- */
+  #rulesTab{ display:none; }
+  .artlist{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  details.artcard{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  details.artcard summary{
+    list-style:none; cursor:pointer; padding:13px 16px; display:flex; align-items:center; gap:12px;
+  }
+  details.artcard summary::-webkit-details-marker{ display:none; }
+  details.artcard summary .tag{
+    font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--paper);
+    background:var(--ink); border-radius:5px; padding:3px 8px; flex:none;
+  }
+  details.artcard summary .atitle{
+    font-family:"Oswald",sans-serif; font-weight:500; font-size:.95rem; letter-spacing:.02em;
+  }
+  details.artcard summary .acount{ margin-left:auto; color:var(--ink-faint); font-size:.78rem; font-family:"IBM Plex Mono",monospace; }
+  details.artcard .secs{ padding:0 16px 16px; border-top:1px solid var(--line-soft); }
+  details.artcard .secs .rulesec{ padding-top:10px; }
+  details.artcard .secs .rulesec:first-child{ border-top:none; }
+
+  /* ---------- Practice exam ---------- */
+  #examTab{ display:none; }
+  .exam-card{
+    max-width:560px; margin:24px auto; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:32px 30px; text-align:center; box-shadow:var(--shadow);
+  }
+  .exam-card h2{ font-family:"Oswald",sans-serif; font-size:1.7rem; margin:6px 0 12px; }
+  .exam-card p{ color:var(--ink-soft); font-size:.98rem; margin:0 0 22px; }
+  .bigbtn{
+    font-family:"Oswald",sans-serif; font-weight:600; letter-spacing:.03em; font-size:1rem;
+    background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:13px 26px; cursor:pointer;
+  }
+  .bigbtn:hover{ filter:brightness(1.08); }
+
+  .exam-progress{ max-width:560px; margin:20px auto 0; display:flex; flex-direction:column; gap:6px; }
+  .exam-progress span{ color:var(--ink-faint); font-size:.8rem; }
+  .exam-progress-track{ height:5px; background:var(--line-soft); border-radius:99px; overflow:hidden; }
+  .exam-progress-fill{ height:100%; width:0%; background:var(--accent); transition:width .3s ease; }
+
+  .exam-stage{
+    max-width:560px; margin:18px auto 0; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:36px 30px 32px; text-align:center; min-height:300px;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px;
+    box-shadow:var(--shadow);
+  }
+  .exam-qnum{ color:var(--ink-faint); font-size:.82rem; }
+  .exam-question{
+    font-size:1.35rem; line-height:1.45; margin:4px 0 20px; text-wrap:balance; max-width:44ch;
+  }
+  .exam-timer{ position:relative; width:104px; height:104px; display:flex; align-items:center; justify-content:center; }
+  .exam-timer svg{ position:absolute; top:0; left:0; }
+  #examTimerRing{ transition:stroke-dashoffset 1s linear; }
+  #examTimerNum{ font-size:1.8rem; font-weight:600; }
+  .exam-timer-caption{ position:absolute; bottom:-24px; left:50%; transform:translateX(-50%); white-space:nowrap; color:var(--ink-faint); font-size:.68rem; }
+
+  .exam-answers{ display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; max-width:400px; margin-top:6px; }
+  .exam-btn{
+    font-family:"Oswald",sans-serif; font-weight:600; font-size:1.05rem; letter-spacing:.03em;
+    padding:20px 0; border-radius:12px; cursor:pointer; border:2px solid; background:none;
+  }
+  .exam-btn.true{ border-color:var(--true); color:var(--true); }
+  .exam-btn.true:hover{ background:var(--true-soft); }
+  .exam-btn.false{ border-color:var(--false); color:var(--false); }
+  .exam-btn.false:hover{ background:var(--false-soft); }
+  .exam-btn.picked.true{ background:var(--true); color:#fff; }
+  .exam-btn.picked.false{ background:var(--false); color:#fff; }
+
+  .exam-score{ max-width:520px; }
+  .score-big{ margin:4px 0 4px; }
+  .score-big #scoreNum{ font-size:3.4rem; font-weight:600; }
+  .score-big .score-of{ font-family:"IBM Plex Mono",monospace; font-size:1.3rem; color:var(--ink-faint); margin-left:4px; }
+  .score-verdict{ font-family:"Oswald",sans-serif; letter-spacing:.03em; margin-bottom:20px; color:var(--ink-soft); }
+  .score-breakdown{ display:flex; justify-content:center; gap:28px; margin-bottom:24px; }
+  .score-breakdown > div{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .score-breakdown .mono{ font-size:1.15rem; font-weight:600; }
+  .score-breakdown .label{ font-size:.62rem; color:var(--ink-faint); }
+  .review-heading{
+    margin:30px 0 0; font-family:"Oswald",sans-serif;
+    font-weight:500; font-size:1rem; letter-spacing:.02em; color:var(--ink-soft);
+  }
+  #reviewList{ margin:10px 0 0; }
+  .yourAnswer{ font-family:"IBM Plex Mono",monospace; font-size:.8rem; }
+
+  @media (max-width:560px){
+    .exam-question{ font-size:1.15rem; }
+    .exam-answers{ grid-template-columns:1fr 1fr; }
+  }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:10px 20px 40px; color:var(--ink-faint); font-size:.78rem;
+  }
+
+  @media (max-width:720px){
+    .qrow-head{ grid-template-columns:34px 60px 1fr 18px; }
+    .qref{ display:none; }
+    .langs{ grid-template-columns:1fr; }
+    .stats{ margin-left:0; width:100%; }
+  }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1><span class="mark">SHUGO</span> BENCH</h1>
+      <p>WKF Kumite examination questions, cross-referenced verdict by verdict against the 2026 Competition Rules — one bench, two documents.</p>
+    </div>
+    <div class="stats" id="statsBox"></div>
+  </div>
+  <nav class="tabs">
+    <button class="active" data-tab="qTab">Question Log</button>
+    <button data-tab="rulesTab">Rules Index</button>
+    <button data-tab="examTab">Practice Exam</button>
+  </nav>
+</header>
+
+<div class="controls" id="qControls">
+  <div class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="searchBox" type="search" placeholder="Search question text or rule reference…" autocomplete="off">
+  </div>
+  <div class="pillgroup" id="verdictPills">
+    <button class="pill active" data-v="ALL">All</button>
+    <button class="pill t" data-v="TRUE">True</button>
+    <button class="pill f" data-v="FALSE">False</button>
+  </div>
+  <select id="articleFilter"><option value="ALL">All articles</option></select>
+</div>
+<div class="count-line" id="countLine"></div>
+
+<main>
+  <section id="qTab">
+    <ul class="qlist" id="qlist"></ul>
+  </section>
+
+  <section id="rulesTab">
+    <div class="count-line" style="margin:0 0 8px;padding:0;">Full text of the WKF Kumite Competition Rules (v2026.01), parsed into <span id="sectionCount" class="mono"></span> numbered provisions and appendix entries across 18 articles and 6 appendices.</div>
+    <div class="artlist" id="artlist"></div>
+  </section>
+
+  <section id="examTab">
+    <div id="examIntro" class="exam-card">
+      <span class="label" style="color:var(--accent);">Referee &amp; Judge Prep</span>
+      <h2>Practice Exam</h2>
+      <p>70 questions, drawn at random from the full 246-question bank. Each one is shown for <strong>10 seconds</strong> — read it, then the TRUE / FALSE choice appears. Nothing is saved; close the tab and it's gone.</p>
+      <button id="examStartBtn" class="bigbtn">Start Exam →</button>
+    </div>
+
+    <div id="examActive" hidden>
+      <div class="exam-progress">
+        <span id="examProgressLabel" class="mono"></span>
+        <div class="exam-progress-track"><div id="examProgressBar" class="exam-progress-fill"></div></div>
+      </div>
+      <div class="exam-stage">
+        <div id="examQnum" class="exam-qnum mono"></div>
+        <p id="examQuestionText" class="exam-question"></p>
+
+        <div id="examTimerWrap" class="exam-timer">
+          <svg width="104" height="104" viewBox="0 0 104 104">
+            <circle cx="52" cy="52" r="44" fill="none" stroke="var(--line)" stroke-width="7"/>
+            <circle id="examTimerRing" cx="52" cy="52" r="44" fill="none" stroke="var(--accent)" stroke-width="7"
+                    stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="0"
+                    transform="rotate(-90 52 52)"/>
+          </svg>
+          <span id="examTimerNum" class="mono"></span>
+          <span class="label exam-timer-caption">Reading time</span>
+        </div>
+
+        <div id="examAnswers" class="exam-answers" hidden>
+          <button class="exam-btn true" data-choice="TRUE">True</button>
+          <button class="exam-btn false" data-choice="FALSE">False</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="examResults" hidden>
+      <div class="exam-card exam-score">
+        <span class="label" style="color:var(--accent);">Results</span>
+        <div class="score-big"><span id="scoreNum" class="mono"></span><span class="score-of">/ 70</span></div>
+        <div id="scoreVerdict" class="score-verdict"></div>
+        <div class="score-breakdown">
+          <div><span id="scoreTrueAcc" class="mono"></span><span class="label">True Qs correct</span></div>
+          <div><span id="scoreFalseAcc" class="mono"></span><span class="label">False Qs correct</span></div>
+          <div><span id="scoreMissed" class="mono"></span><span class="label">Missed</span></div>
+        </div>
+        <button id="examRestartBtn" class="bigbtn">Start a new random exam →</button>
+      </div>
+      <h3 id="reviewHeading" class="review-heading" hidden>Review your misses</h3>
+      <ul class="qlist" id="reviewList"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>Source documents: <em>WKF Kumite Examination Questions</em> (v07/2026.1) and <em>WKF Kumite Competition Rules</em> (v2026.01). Built as a local reference database — not an official WKF publication.</footer>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function secLabel(s){
+    // Purely numeric clause numbers (e.g. "2.2.1", "7") get a section mark; named
+    // entries (glossary terms, form fields, category names) are shown as plain labels.
+    return /^\d+(\.\d+)*$/.test(s.section_no) ? ("§ " + s.section_no) : s.section_no;
+  }
+
+  // ---- build section lookup ----
+  var secByKey = {}; // "article_no|section_no" -> section obj
+  SECTIONS.forEach(function(s){ secByKey[s.article_no + "|" + s.section_no] = s; });
+  var secBySection = {}; // "2.2.1" -> section obj (first match)
+  SECTIONS.forEach(function(s){ if(!secBySection[s.section_no]) secBySection[s.section_no] = s; });
+
+  function findRuleSections(ref){
+    if(!ref) return [];
+    var out = [];
+    var seen = {};
+    // Appendix references, e.g. "Appendix 5, item 2" or "Appendix 1 (Terminology)"
+    var appMatch = ref.match(/Appendix\s+(\d+)/i);
+    if (appMatch) {
+      var appNo = "App" + appMatch[1];
+      var itemMatch = ref.match(/item\s+(\d+)/i);
+      var exact = itemMatch ? secByKey[appNo + "|" + itemMatch[1]] : null;
+      if (exact && !seen[appNo + ":" + itemMatch[1]]) {
+        seen[appNo + ":" + itemMatch[1]] = true;
+        out.push(exact);
+      } else if (!exact) {
+        var art = ARTICLES.find(function(a){ return a.article_no === appNo; });
+        if (art && !seen[appNo]) {
+          seen[appNo] = true;
+          out.push({ section_no: "Appendix " + appMatch[1], text: art.title });
+        }
+      }
+    }
+    // numeric section refs like 2.2.1, 10.4.16(a), 12.2.7
+    var nums = ref.match(/\d{1,2}\.\d{1,2}(?:\.\d{1,2})?/g) || [];
+    nums.forEach(function(n){
+      var s = secBySection[n];
+      if (s && !seen[n]) { seen[n] = true; out.push(s); }
+    });
+    return out;
+  }
+
+  // ---- header stats ----
+  var total = QUESTIONS.length;
+  var trueCt = QUESTIONS.filter(function(q){ return q.answer === "TRUE"; }).length;
+  var falseCt = total - trueCt;
+  document.getElementById("statsBox").innerHTML =
+    '<div class="stat"><span class="n mono">'+total+'</span><span class="l label">Questions</span></div>' +
+    '<div class="stat true"><span class="n mono">'+trueCt+'</span><span class="l label">True</span></div>' +
+    '<div class="stat false"><span class="n mono">'+falseCt+'</span><span class="l label">False</span></div>' +
+    '<div class="stat"><span class="n mono">'+ARTICLES.length+'</span><span class="l label">Rule sections</span></div>';
+
+  // ---- article filter options ----
+  var artSel = document.getElementById("articleFilter");
+  ARTICLES.forEach(function(a){
+    var opt = document.createElement("option");
+    opt.value = a.article_no;
+    opt.textContent = (a.article_no.startsWith("App") ? "Appendix " + a.article_no.slice(3) : "Art. " + a.article_no) + " — " + a.title;
+    artSel.appendChild(opt);
+  });
+
+  // ---- state ----
+  var state = { verdict:"ALL", article:"ALL", q:"" };
+
+  function refMatchesArticle(ref, articleNo){
+    if (articleNo === "ALL") return true;
+    if (articleNo.startsWith("App")) {
+      return ref.indexOf("Appendix " + articleNo.slice(3)) !== -1;
+    }
+    var nums = ref.match(/\d{1,2}\.\d{1,2}(?:\.\d{1,2})?/g) || [];
+    return nums.some(function(n){ return n.split(".")[0] === articleNo; });
+  }
+
+  function renderList(){
+    var qlist = document.getElementById("qlist");
+    var term = state.q.trim().toLowerCase();
+    var filtered = QUESTIONS.filter(function(q){
+      if (state.verdict !== "ALL" && q.answer !== state.verdict) return false;
+      if (!refMatchesArticle(q.rule_ref, state.article)) return false;
+      if (term && q.en.toLowerCase().indexOf(term) === -1 && q.rule_ref.toLowerCase().indexOf(term) === -1) return false;
+      return true;
+    });
+    document.getElementById("countLine").textContent = "Showing " + filtered.length + " of " + total + " questions";
+    qlist.innerHTML = filtered.map(function(q){
+      return '<li class="qrow" data-num="'+q.num+'">' +
+        '<div class="qrow-head">' +
+          '<span class="qnum">#'+q.num+'</span>' +
+          '<span class="verdict '+(q.answer==="TRUE"?"T":"F")+'">'+q.answer+'</span>' +
+          '<span class="qtext">'+escapeHtml(q.en)+'</span>' +
+          '<span class="qref">'+escapeHtml(q.rule_ref)+'</span>' +
+          '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>' +
+        '</div>' +
+        '<div class="qrow-body"></div>' +
+      '</li>';
+    }).join("");
+  }
+
+  function renderBody(li, q){
+    var body = li.querySelector(".qrow-body");
+    if (body.dataset.built) return;
+    body.dataset.built = "1";
+    var secs = findRuleSections(q.rule_ref);
+    var secsHtml = secs.length
+      ? secs.map(function(s){
+          return '<div class="rulesec"><span class="secno">'+escapeHtml(secLabel(s))+'</span><p>'+escapeHtml(s.text)+'</p></div>';
+        }).join("")
+      : '<p class="noref">No exact clause match parsed — see reference: '+escapeHtml(q.rule_ref)+'</p>';
+    body.innerHTML =
+      '<div class="langs">' +
+        '<div><span class="lbl label">Français</span>'+escapeHtml(q.fr)+'</div>' +
+        '<div><span class="lbl label">Español</span>'+escapeHtml(q.es)+'</div>' +
+      '</div>' +
+      '<div class="rulepanel"><h4>Rule text — '+escapeHtml(q.rule_ref)+'</h4>'+secsHtml+'</div>';
+  }
+
+  document.getElementById("qlist").addEventListener("click", function(e){
+    var head = e.target.closest(".qrow-head");
+    if (!head) return;
+    var li = head.closest(".qrow");
+    var num = +li.dataset.num;
+    var q = QUESTIONS.find(function(x){ return x.num === num; });
+    renderBody(li, q);
+    li.classList.toggle("open");
+  });
+
+  document.getElementById("searchBox").addEventListener("input", function(e){
+    state.q = e.target.value; renderList();
+  });
+  document.getElementById("verdictPills").addEventListener("click", function(e){
+    var btn = e.target.closest(".pill"); if(!btn) return;
+    document.querySelectorAll("#verdictPills .pill").forEach(function(p){ p.classList.remove("active"); });
+    btn.classList.add("active");
+    state.verdict = btn.dataset.v; renderList();
+  });
+  artSel.addEventListener("change", function(){ state.article = artSel.value; renderList(); });
+
+  // ---- tabs ----
+  var PANELS = ["qTab", "rulesTab", "examTab"];
+  document.querySelectorAll("nav.tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      var tab = btn.dataset.tab;
+      PANELS.forEach(function(p){ document.getElementById(p).style.display = (p === tab) ? "block" : "none"; });
+      document.getElementById("qControls").style.display = tab === "qTab" ? "" : "none";
+      document.getElementById("countLine").style.display = tab === "qTab" ? "" : "none";
+      if (tab === "examTab" && examState && examState.timer) {
+        // leaving mid-exam pauses nothing server-side; timer keeps running in background harmlessly
+      }
+    });
+  });
+  document.getElementById("sectionCount").textContent = SECTIONS.length;
+
+  // ---- rules index tab ----
+  var artlist = document.getElementById("artlist");
+  var secsByArticle = {};
+  SECTIONS.forEach(function(s){ (secsByArticle[s.article_no] = secsByArticle[s.article_no] || []).push(s); });
+
+  artlist.innerHTML = ARTICLES.map(function(a){
+    var secs = secsByArticle[a.article_no] || [];
+    var tag = a.article_no.startsWith("App") ? "App " + a.article_no.slice(3) : "Art " + a.article_no;
+    var secsHtml = secs.map(function(s){
+      return '<div class="rulesec"><span class="secno">'+escapeHtml(secLabel(s))+'</span><p>'+escapeHtml(s.text)+'</p></div>';
+    }).join("") || '<p class="noref">No text available for this appendix.</p>';
+    return '<details class="artcard">' +
+      '<summary><span class="tag mono">'+tag+'</span><span class="atitle">'+escapeHtml(a.title)+'</span><span class="acount">'+secs.length+' clauses</span></summary>' +
+      '<div class="secs">'+secsHtml+'</div>' +
+    '</details>';
+  }).join("");
+
+  renderList();
+
+  // ==================== Practice Exam ====================
+  var EXAM_SIZE = 70;
+  var READ_SECONDS = 10;
+  var RING_CIRCUMFERENCE = 2 * Math.PI * 44; // r=44
+  var examState = null;
+
+  function shuffle(arr){
+    for (var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function startExam(){
+    var pool = shuffle(QUESTIONS.slice());
+    examState = {
+      questions: pool.slice(0, Math.min(EXAM_SIZE, pool.length)),
+      idx: 0,
+      results: [],
+      timer: null,
+      remaining: READ_SECONDS
+    };
+    document.getElementById("examIntro").hidden = true;
+    document.getElementById("examResults").hidden = true;
+    document.getElementById("examActive").hidden = false;
+    showExamQuestion();
+  }
+
+  function showExamQuestion(){
+    var st = examState;
+    var q = st.questions[st.idx];
+    document.getElementById("examProgressLabel").textContent = "Question " + (st.idx + 1) + " of " + st.questions.length;
+    document.getElementById("examProgressBar").style.width = (100 * st.idx / st.questions.length) + "%";
+    document.getElementById("examQnum").textContent = "Bank #" + q.num;
+    document.getElementById("examQuestionText").textContent = q.en;
+
+    var answers = document.getElementById("examAnswers");
+    answers.hidden = true;
+    answers.querySelectorAll(".exam-btn").forEach(function(b){ b.classList.remove("picked"); b.disabled = false; });
+
+    var ring = document.getElementById("examTimerRing");
+    var timerWrap = document.getElementById("examTimerWrap");
+    timerWrap.hidden = false;
+    ring.style.transition = "none";
+    ring.style.strokeDashoffset = 0;
+    // force reflow so the next transition actually animates from 0
+    ring.getBoundingClientRect();
+    ring.style.transition = "";
+
+    st.remaining = READ_SECONDS;
+    updateTimerDisplay();
+    clearInterval(st.timer);
+    st.timer = setInterval(function(){
+      st.remaining--;
+      updateTimerDisplay();
+      if (st.remaining <= 0){
+        clearInterval(st.timer);
+        timerWrap.hidden = true;
+        answers.hidden = false;
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay(){
+    document.getElementById("examTimerNum").textContent = Math.max(examState.remaining, 0);
+    var pct = Math.max(examState.remaining, 0) / READ_SECONDS;
+    document.getElementById("examTimerRing").style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
+  }
+
+  function submitExamAnswer(choice, btn){
+    var st = examState;
+    document.querySelectorAll("#examAnswers .exam-btn").forEach(function(b){ b.disabled = true; });
+    btn.classList.add("picked");
+    var q = st.questions[st.idx];
+    st.results.push({ q: q, yourAnswer: choice, correct: choice === q.answer });
+    setTimeout(function(){
+      st.idx++;
+      if (st.idx >= st.questions.length) { finishExam(); }
+      else { showExamQuestion(); }
+    }, 500);
+  }
+
+  function finishExam(){
+    clearInterval(examState.timer);
+    document.getElementById("examActive").hidden = true;
+    var results = examState.results;
+    var total = results.length;
+    var correctCt = results.filter(function(r){ return r.correct; }).length;
+    var pct = Math.round(100 * correctCt / total);
+
+    var trueQs = results.filter(function(r){ return r.q.answer === "TRUE"; });
+    var falseQs = results.filter(function(r){ return r.q.answer === "FALSE"; });
+    var trueAcc = trueQs.length ? Math.round(100 * trueQs.filter(function(r){ return r.correct; }).length / trueQs.length) : 0;
+    var falseAcc = falseQs.length ? Math.round(100 * falseQs.filter(function(r){ return r.correct; }).length / falseQs.length) : 0;
+    var missed = results.filter(function(r){ return !r.correct; });
+
+    document.getElementById("scoreNum").textContent = correctCt;
+    document.querySelector(".score-of").textContent = "/ " + total + " · " + pct + "%";
+    var verdict = pct >= 90 ? "Bench-ready — excellent command of the rules."
+      : pct >= 75 ? "Solid — a bit more review and you're there."
+      : pct >= 50 ? "Getting there — revisit the Rules Index for your misses below."
+      : "Keep studying — work through the missed clauses below.";
+    document.getElementById("scoreVerdict").textContent = verdict;
+    document.getElementById("scoreTrueAcc").textContent = trueAcc + "%";
+    document.getElementById("scoreFalseAcc").textContent = falseAcc + "%";
+    document.getElementById("scoreMissed").textContent = missed.length;
+
+    var reviewHeading = document.getElementById("reviewHeading");
+    var reviewList = document.getElementById("reviewList");
+    if (missed.length){
+      reviewHeading.hidden = false;
+      reviewHeading.textContent = "Review your " + missed.length + " miss" + (missed.length === 1 ? "" : "es");
+      reviewList.innerHTML = missed.map(function(r){
+        var q = r.q;
+        return '<li class="qrow" data-num="'+q.num+'">' +
+          '<div class="qrow-head">' +
+            '<span class="qnum">#'+q.num+'</span>' +
+            '<span class="verdict '+(q.answer==="TRUE"?"T":"F")+'">'+q.answer+'</span>' +
+            '<span class="qtext">'+escapeHtml(q.en)+' <span class="yourAnswer">— you answered '+r.yourAnswer+'</span></span>' +
+            '<span class="qref">'+escapeHtml(q.rule_ref)+'</span>' +
+            '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>' +
+          '</div>' +
+          '<div class="qrow-body"></div>' +
+        '</li>';
+      }).join("");
+    } else {
+      reviewHeading.hidden = false;
+      reviewHeading.textContent = "Clean sweep — no misses to review.";
+      reviewList.innerHTML = "";
+    }
+    document.getElementById("examResults").hidden = false;
+  }
+
+  reviewList_delegate();
+  function reviewList_delegate(){
+    document.getElementById("reviewList").addEventListener("click", function(e){
+      var head = e.target.closest(".qrow-head");
+      if (!head) return;
+      var li = head.closest(".qrow");
+      var num = +li.dataset.num;
+      var q = QUESTIONS.find(function(x){ return x.num === num; });
+      renderBody(li, q);
+      li.classList.toggle("open");
+    });
+  }
+
+  document.getElementById("examStartBtn").addEventListener("click", startExam);
+  document.getElementById("examRestartBtn").addEventListener("click", function(){
+    document.getElementById("examResults").hidden = true;
+    document.getElementById("examIntro").hidden = false;
+  });
+  document.getElementById("examAnswers").addEventListener("click", function(e){
+    var btn = e.target.closest(".exam-btn");
+    if (!btn || btn.disabled) return;
+    submitExamAnswer(btn.dataset.choice, btn);
+  });
+})();
+</script>
