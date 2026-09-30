@@ -17,7 +17,7 @@ against the **WKF Kumite Competition Rules** (v2026.01, 18 articles + 6 appendic
 - **Question Log** — all 246 exam questions (EN/FR/ES) with a True/False verdict and the exact
   rule clause it hinges on; searchable and filterable by article.
 - **Rules Index** — the full rulebook parsed into 371 numbered clauses, browsable by article.
-- **Practice Exam** — 70 random questions, each shown for 10 seconds before the True/False
-  choice appears; ends with a score and a review of missed questions. Nothing is persisted.
+- **Practice Exam** — 70 random questions, each with a 10-second reading timer; True/False
+  can be answered during the countdown or after it; ends with a score and a review of missed questions. Nothing is persisted.
 
 This is a personal study aid, not an official WKF publication.

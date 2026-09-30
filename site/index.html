@@ -323,7 +323,7 @@
     <div id="examIntro" class="exam-card">
       <span class="label" style="color:var(--accent);">Referee &amp; Judge Prep</span>
       <h2>Practice Exam</h2>
-      <p>70 questions, drawn at random from the full 246-question bank. Each one is shown for <strong>10 seconds</strong> — read it, then the TRUE / FALSE choice appears. Nothing is saved; close the tab and it's gone.</p>
+      <p>70 questions, drawn at random from the full 246-question bank. Each one comes with a <strong>10-second</strong> reading timer — answer TRUE / FALSE any time, during the countdown or after it. Nothing is saved; close the tab and it's gone.</p>
       <button id="examStartBtn" class="bigbtn">Start Exam →</button>
     </div>
 
@@ -347,7 +347,7 @@
           <span class="label exam-timer-caption">Reading time</span>
         </div>
 
-        <div id="examAnswers" class="exam-answers" hidden>
+        <div id="examAnswers" class="exam-answers">
           <button class="exam-btn true" data-choice="TRUE">True</button>
           <button class="exam-btn false" data-choice="FALSE">False</button>
         </div>
@@ -593,7 +593,7 @@
     document.getElementById("examQuestionText").textContent = q.en;
 
     var answers = document.getElementById("examAnswers");
-    answers.hidden = true;
+    answers.hidden = false;
     answers.querySelectorAll(".exam-btn").forEach(function(b){ b.classList.remove("picked"); b.disabled = false; });
 
     var ring = document.getElementById("examTimerRing");
@@ -614,7 +614,6 @@
       if (st.remaining <= 0){
         clearInterval(st.timer);
         timerWrap.hidden = true;
-        answers.hidden = false;
       }
     }, 1000);
   }
@@ -627,6 +626,7 @@
 
   function submitExamAnswer(choice, btn){
     var st = examState;
+    clearInterval(st.timer);
     document.querySelectorAll("#examAnswers .exam-btn").forEach(function(b){ b.disabled = true; });
     btn.classList.add("picked");
     var q = st.questions[st.idx];
