@@ -323,7 +323,7 @@
     <div id="examIntro" class="exam-card">
       <span class="label" style="color:var(--accent);">Referee &amp; Judge Prep</span>
       <h2>Practice Exam</h2>
-      <p>70 questions, drawn at random from the full 246-question bank. Each one comes with a <strong>10-second</strong> reading timer — answer TRUE / FALSE any time, during the countdown or after it. Nothing is saved; close the tab and it's gone.</p>
+      <p>70 questions, drawn at random from the full 246-question bank. You have <strong>10 seconds</strong> to answer each one TRUE / FALSE — no answer in time counts as wrong and the next question follows. Nothing is saved; close the tab and it's gone.</p>
       <button id="examStartBtn" class="bigbtn">Start Exam →</button>
     </div>
 
@@ -344,7 +344,7 @@
                     transform="rotate(-90 52 52)"/>
           </svg>
           <span id="examTimerNum" class="mono"></span>
-          <span class="label exam-timer-caption">Reading time</span>
+          <span class="label exam-timer-caption">Time left</span>
         </div>
 
         <div id="examAnswers" class="exam-answers">
@@ -612,8 +612,7 @@
       st.remaining--;
       updateTimerDisplay();
       if (st.remaining <= 0){
-        clearInterval(st.timer);
-        timerWrap.hidden = true;
+        submitExamAnswer(null, null);
       }
     }, 1000);
   }
@@ -628,7 +627,7 @@
     var st = examState;
     clearInterval(st.timer);
     document.querySelectorAll("#examAnswers .exam-btn").forEach(function(b){ b.disabled = true; });
-    btn.classList.add("picked");
+    if (btn) btn.classList.add("picked");
     var q = st.questions[st.idx];
     st.results.push({ q: q, yourAnswer: choice, correct: choice === q.answer });
     setTimeout(function(){
@@ -674,7 +673,7 @@
           '<div class="qrow-head">' +
             '<span class="qnum">#'+q.num+'</span>' +
             '<span class="verdict '+(q.answer==="TRUE"?"T":"F")+'">'+q.answer+'</span>' +
-            '<span class="qtext">'+escapeHtml(q.en)+' <span class="yourAnswer">— you answered '+r.yourAnswer+'</span></span>' +
+            '<span class="qtext">'+escapeHtml(q.en)+' <span class="yourAnswer">— '+(r.yourAnswer ? 'you answered '+r.yourAnswer : 'no answer in time')+'</span></span>' +
             '<span class="qref">'+escapeHtml(q.rule_ref)+'</span>' +
             '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>' +
           '</div>' +
