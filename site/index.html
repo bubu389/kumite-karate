@@ -80,6 +80,17 @@
   .stat.true .n{ color:var(--true); }
   .stat.false .n{ color:var(--false); }
 
+  .discipline{
+    display:inline-flex; border:1px solid var(--line); border-radius:999px; background:var(--surface);
+    padding:3px; gap:2px; align-self:center;
+  }
+  .discipline button{
+    font-family:"Oswald",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.08em; text-transform:uppercase;
+    background:none; border:none; border-radius:999px; color:var(--ink-soft); cursor:pointer; padding:7px 18px;
+  }
+  .discipline button:hover{ color:var(--ink); }
+  .discipline button.active{ background:var(--accent); color:#fff; }
+
   nav.tabs{ max-width:1180px; margin:0 auto; padding:0 20px; display:flex; gap:4px; }
   nav.tabs button{
     font-family:"Oswald",sans-serif; font-weight:500; font-size:.8rem;
@@ -176,6 +187,8 @@
   .rulesec .secno{ font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); margin-right:6px; }
   .rulesec p{ margin:2px 0 0; font-size:.92rem; color:var(--ink); }
   .noref{ color:var(--ink-faint); font-size:.85rem; font-style:italic; }
+  .why{ margin:0 0 14px; font-size:.92rem; color:var(--ink); }
+  .why .label{ font-size:.72rem; color:var(--accent); margin-right:6px; }
 
   /* ---------- Rules index tab ---------- */
   #rulesTab{ display:none; }
@@ -251,6 +264,12 @@
   .score-big{ margin:4px 0 4px; }
   .score-big #scoreNum{ font-size:3.4rem; font-weight:600; }
   .score-big .score-of{ font-family:"IBM Plex Mono",monospace; font-size:1.3rem; color:var(--ink-faint); margin-left:4px; }
+  .score-result{
+    display:table; font-family:"Oswald",sans-serif; font-weight:700; font-size:1.5rem; letter-spacing:.12em;
+    padding:6px 22px; border-radius:8px; margin:10px auto 2px;
+  }
+  .score-result.pass{ background:var(--true-soft); color:var(--true); }
+  .score-result.fail{ background:var(--false-soft); color:var(--false); }
   .score-verdict{ font-family:"Oswald",sans-serif; letter-spacing:.03em; margin-bottom:20px; color:var(--ink-soft); }
   .score-breakdown{ display:flex; justify-content:center; gap:28px; margin-bottom:24px; }
   .score-breakdown > div{ display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -284,7 +303,11 @@
   <div class="top-inner">
     <div class="brand">
       <h1><span class="mark">SHUGO</span> BENCH</h1>
-      <p>WKF Kumite examination questions, cross-referenced verdict by verdict against the 2026 Competition Rules — one bench, two documents.</p>
+      <p id="brandBlurb"></p>
+    </div>
+    <div class="discipline" id="disciplineSwitch" role="tablist" aria-label="Discipline">
+      <button class="active" data-d="kumite" role="tab">Kumite</button>
+      <button data-d="kata" role="tab">Kata</button>
     </div>
     <div class="stats" id="statsBox"></div>
   </div>
@@ -315,7 +338,7 @@
   </section>
 
   <section id="rulesTab">
-    <div class="count-line" style="margin:0 0 8px;padding:0;">Full text of the WKF Kumite Competition Rules (v2026.01), parsed into <span id="sectionCount" class="mono"></span> numbered provisions and appendix entries across 18 articles and 6 appendices.</div>
+    <div class="count-line" id="rulesNote" style="margin:0 0 8px;padding:0;"></div>
     <div class="artlist" id="artlist"></div>
   </section>
 
@@ -323,7 +346,7 @@
     <div id="examIntro" class="exam-card">
       <span class="label" style="color:var(--accent);">Referee &amp; Judge Prep</span>
       <h2>Practice Exam</h2>
-      <p>70 questions, drawn at random from the full 246-question bank. You have <strong>10 seconds</strong> to answer each one TRUE / FALSE — no answer in time counts as wrong and the next question follows. Nothing is saved; close the tab and it's gone.</p>
+      <p><span id="examIntroCount"></span> You have <strong>10 seconds</strong> to answer each one TRUE / FALSE — no answer in time counts as wrong and the next question follows. Nothing is saved; close the tab and it's gone.</p>
       <button id="examStartBtn" class="bigbtn">Start Exam →</button>
     </div>
 
@@ -357,12 +380,13 @@
     <div id="examResults" hidden>
       <div class="exam-card exam-score">
         <span class="label" style="color:var(--accent);">Results</span>
-        <div class="score-big"><span id="scoreNum" class="mono"></span><span class="score-of">/ 70</span></div>
+        <div id="scoreResult" class="score-result"></div>
+        <div class="score-big"><span id="scoreNum" class="mono"></span><span class="score-of"></span></div>
         <div id="scoreVerdict" class="score-verdict"></div>
         <div class="score-breakdown">
           <div><span id="scoreTrueAcc" class="mono"></span><span class="label">True Qs correct</span></div>
           <div><span id="scoreFalseAcc" class="mono"></span><span class="label">False Qs correct</span></div>
-          <div><span id="scoreMissed" class="mono"></span><span class="label">Missed</span></div>
+          <div><span id="scoreMissed" class="mono"></span><span class="label">Wrong</span></div>
         </div>
         <button id="examRestartBtn" class="bigbtn">Start a new random exam →</button>
       </div>
@@ -372,7 +396,7 @@
   </section>
 </main>
 
-<footer>Source documents: <em>WKF Kumite Examination Questions</em> (v07/2026.1) and <em>WKF Kumite Competition Rules</em> (v2026.01). Built as a local reference database — not an official WKF publication.</footer>
+<footer><span id="footerSources"></span> Built as a local reference database — not an official WKF publication.</footer>
 
 <script src="data.js"></script>
 <script>
@@ -383,89 +407,109 @@
     return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   }
 
+  var DISCIPLINES = {
+    kumite: {
+      questions: QUESTIONS, articles: ARTICLES, sections: SECTIONS,
+      label: "Kumite", maxWrong: 7,   // pass mark: 8 or more wrong is a fail
+      blurb: "WKF Kumite examination questions, cross-referenced verdict by verdict against the 2026 Competition Rules — one bench, two documents.",
+      rulesNote: "Full text of the WKF Kumite Competition Rules (v2026.01), parsed into {n} numbered provisions and appendix entries across 18 articles and 6 appendices.",
+      sources: "Source documents: <em>WKF Kumite Examination Questions</em> (v07/2026.1) and <em>WKF Kumite Competition Rules</em> (v2026.01)."
+    },
+    kata: {
+      questions: KATA_QUESTIONS, articles: KATA_ARTICLES, sections: KATA_SECTIONS,
+      label: "Kata", maxWrong: 5,     // pass mark: 6 or more wrong is a fail
+      blurb: "WKF Kata & Para Karate examination questions, cross-referenced verdict by verdict against the 2026 Kata and Para Karate Kata Rules — one bench, three documents.",
+      rulesNote: "Full text of the WKF Kata Competition Rules (v2026.0) and the WKF Para Karate Kata Competition Rules (v2026.0), parsed into {n} numbered provisions and appendix entries. Para Karate articles are marked “Para”.",
+      sources: "Source documents: <em>WKF Kata &amp; Para Karate Examination Questions</em> (v07/2026), <em>WKF Kata Competition Rules</em> (v2026.0) and <em>WKF Para Karate Kata Competition Rules</em> (v2026.0)."
+    }
+  };
+  var D = null;        // the selected discipline's data
+  var dName = null;    // "kumite" | "kata"
+  var secByKey = {};   // "article_no|section_no" -> section obj
+
   function secLabel(s){
     // Purely numeric clause numbers (e.g. "2.2.1", "7") get a section mark; named
     // entries (glossary terms, form fields, category names) are shown as plain labels.
+    // Kata appendices and Para Karate articles use keys like "App1", "PApp1", "P11".
+    var m = s.section_no.match(/^(P?)App(\d+)$/);
+    if (m) return (m[1] ? "Para " : "") + "Appendix " + m[2];
+    m = s.section_no.match(/^P(\d+)$/);
+    if (m) return "Para § " + m[1];
     return /^\d+(\.\d+)*$/.test(s.section_no) ? ("§ " + s.section_no) : s.section_no;
   }
 
-  // ---- build section lookup ----
-  var secByKey = {}; // "article_no|section_no" -> section obj
-  SECTIONS.forEach(function(s){ secByKey[s.article_no + "|" + s.section_no] = s; });
-  var secBySection = {}; // "2.2.1" -> section obj (first match)
-  SECTIONS.forEach(function(s){ if(!secBySection[s.section_no]) secBySection[s.section_no] = s; });
+  function artLabel(a, short){
+    var para = /^P/.test(a.article_no);
+    var k = para ? a.article_no.slice(1) : a.article_no;
+    var base = k.startsWith("App") ? (short ? "App " : "Appendix ") + k.slice(3) : (short ? "Art " : "Art. ") + k;
+    return (para ? "Para " : "") + base;
+  }
 
-  function findRuleSections(ref){
-    if(!ref) return [];
+  // Split a rule reference into the articles/sections it cites. Kata refs name their rulebook per
+  // segment ("Para Art. 7.2.2 / 7.4.1", "Art. 5.9.1 / Kumite Art. 10.5"); Kumite refs have no prefix.
+  function refParts(ref){
     var out = [];
-    var seen = {};
-    // Appendix references, e.g. "Appendix 5, item 2" or "Appendix 1 (Terminology)"
-    var appMatch = ref.match(/Appendix\s+(\d+)/i);
-    if (appMatch) {
-      var appNo = "App" + appMatch[1];
-      var itemMatch = ref.match(/item\s+(\d+)/i);
-      var exact = itemMatch ? secByKey[appNo + "|" + itemMatch[1]] : null;
-      if (exact && !seen[appNo + ":" + itemMatch[1]]) {
-        seen[appNo + ":" + itemMatch[1]] = true;
-        out.push(exact);
-      } else if (!exact) {
-        var art = ARTICLES.find(function(a){ return a.article_no === appNo; });
-        if (art && !seen[appNo]) {
-          seen[appNo] = true;
-          out.push({ section_no: "Appendix " + appMatch[1], text: art.title });
-        }
+    var prefix = "";
+    (ref || "").split("/").forEach(function(seg){
+      seg = seg.trim();
+      if (dName === "kata") {
+        if (/^Kumite\b/i.test(seg)) return;
+        if (/^Para\b/i.test(seg)) prefix = "P";
+        else if (/^(Art|App)/i.test(seg)) prefix = "";
       }
-    }
-    // numeric section refs like 2.2.1, 10.4.16(a), 12.2.7
-    var nums = ref.match(/\d{1,2}\.\d{1,2}(?:\.\d{1,2})?/g) || [];
-    nums.forEach(function(n){
-      var s = secBySection[n];
-      if (s && !seen[n]) { seen[n] = true; out.push(s); }
+      var app = seg.match(/App(?:endix|\.)\s*(\d+)/i);
+      if (app) {
+        var item = seg.match(/item\s+(\d+)/i);
+        out.push({ art: prefix + "App" + app[1], item: item ? item[1] : null });
+      }
+      (seg.match(/\d{1,2}(?:\.\d{1,2}){1,3}/g) || []).forEach(function(n){
+        out.push({ art: prefix + n.split(".")[0], sec: n });
+      });
     });
     return out;
   }
 
-  // ---- header stats ----
-  var total = QUESTIONS.length;
-  var trueCt = QUESTIONS.filter(function(q){ return q.answer === "TRUE"; }).length;
-  var falseCt = total - trueCt;
-  document.getElementById("statsBox").innerHTML =
-    '<div class="stat"><span class="n mono">'+total+'</span><span class="l label">Questions</span></div>' +
-    '<div class="stat true"><span class="n mono">'+trueCt+'</span><span class="l label">True</span></div>' +
-    '<div class="stat false"><span class="n mono">'+falseCt+'</span><span class="l label">False</span></div>' +
-    '<div class="stat"><span class="n mono">'+ARTICLES.length+'</span><span class="l label">Rule sections</span></div>';
-
-  // ---- article filter options ----
-  var artSel = document.getElementById("articleFilter");
-  ARTICLES.forEach(function(a){
-    var opt = document.createElement("option");
-    opt.value = a.article_no;
-    opt.textContent = (a.article_no.startsWith("App") ? "Appendix " + a.article_no.slice(3) : "Art. " + a.article_no) + " — " + a.title;
-    artSel.appendChild(opt);
-  });
+  function findRuleSections(ref){
+    var out = [];
+    var seen = {};
+    function add(s, key){ if (s && !seen[key]) { seen[key] = true; out.push(s); } }
+    refParts(ref).forEach(function(p){
+      if (p.sec) {
+        // e.g. "4.6.7.3(b)" -> try 4.6.7.3, then fall back to the parent clause
+        var n = p.sec;
+        while (n && !secByKey[p.art + "|" + n]) n = n.indexOf(".") > -1 ? n.slice(0, n.lastIndexOf(".")) : "";
+        if (n) add(secByKey[p.art + "|" + n], p.art + "|" + n);
+      } else if (p.item && secByKey[p.art + "|" + p.item]) {
+        add(secByKey[p.art + "|" + p.item], p.art + "|" + p.item);
+      } else if (secByKey[p.art + "|" + p.art]) {
+        add(secByKey[p.art + "|" + p.art], p.art + "|" + p.art);
+      } else {
+        var art = D.articles.find(function(a){ return a.article_no === p.art; });
+        if (art) add({ section_no: artLabel(art), text: art.title }, p.art);
+      }
+    });
+    return out;
+  }
 
   // ---- state ----
   var state = { verdict:"ALL", article:"ALL", q:"" };
+  var artSel = document.getElementById("articleFilter");
 
   function refMatchesArticle(ref, articleNo){
     if (articleNo === "ALL") return true;
-    if (articleNo.startsWith("App")) {
-      return ref.indexOf("Appendix " + articleNo.slice(3)) !== -1;
-    }
-    var nums = ref.match(/\d{1,2}\.\d{1,2}(?:\.\d{1,2})?/g) || [];
-    return nums.some(function(n){ return n.split(".")[0] === articleNo; });
+    return refParts(ref).some(function(p){ return p.art === articleNo; });
   }
 
   function renderList(){
     var qlist = document.getElementById("qlist");
     var term = state.q.trim().toLowerCase();
-    var filtered = QUESTIONS.filter(function(q){
+    var filtered = D.questions.filter(function(q){
       if (state.verdict !== "ALL" && q.answer !== state.verdict) return false;
       if (!refMatchesArticle(q.rule_ref, state.article)) return false;
       if (term && q.en.toLowerCase().indexOf(term) === -1 && q.rule_ref.toLowerCase().indexOf(term) === -1) return false;
       return true;
     });
-    document.getElementById("countLine").textContent = "Showing " + filtered.length + " of " + total + " questions";
+    document.getElementById("countLine").textContent = "Showing " + filtered.length + " of " + D.questions.length + " questions";
     qlist.innerHTML = filtered.map(function(q){
       return '<li class="qrow" data-num="'+q.num+'">' +
         '<div class="qrow-head">' +
@@ -495,6 +539,7 @@
         '<div><span class="lbl label">Français</span>'+escapeHtml(q.fr)+'</div>' +
         '<div><span class="lbl label">Español</span>'+escapeHtml(q.es)+'</div>' +
       '</div>' +
+      (q.explanation ? '<p class="why"><span class="label">Why '+q.answer+'</span> '+escapeHtml(q.explanation)+'</p>' : '') +
       '<div class="rulepanel"><h4>Rule text — '+escapeHtml(q.rule_ref)+'</h4>'+secsHtml+'</div>';
   }
 
@@ -503,7 +548,7 @@
     if (!head) return;
     var li = head.closest(".qrow");
     var num = +li.dataset.num;
-    var q = QUESTIONS.find(function(x){ return x.num === num; });
+    var q = D.questions.find(function(x){ return x.num === num; });
     renderBody(li, q);
     li.classList.toggle("open");
   });
@@ -529,31 +574,65 @@
       PANELS.forEach(function(p){ document.getElementById(p).style.display = (p === tab) ? "block" : "none"; });
       document.getElementById("qControls").style.display = tab === "qTab" ? "" : "none";
       document.getElementById("countLine").style.display = tab === "qTab" ? "" : "none";
-      if (tab === "examTab" && examState && examState.timer) {
-        // leaving mid-exam pauses nothing server-side; timer keeps running in background harmlessly
-      }
     });
   });
-  document.getElementById("sectionCount").textContent = SECTIONS.length;
 
   // ---- rules index tab ----
-  var artlist = document.getElementById("artlist");
-  var secsByArticle = {};
-  SECTIONS.forEach(function(s){ (secsByArticle[s.article_no] = secsByArticle[s.article_no] || []).push(s); });
+  function renderRules(){
+    var secsByArticle = {};
+    D.sections.forEach(function(s){ (secsByArticle[s.article_no] = secsByArticle[s.article_no] || []).push(s); });
+    document.getElementById("rulesNote").textContent = D.rulesNote.replace("{n}", D.sections.length);
+    document.getElementById("artlist").innerHTML = D.articles.map(function(a){
+      var secs = secsByArticle[a.article_no] || [];
+      var secsHtml = secs.map(function(s){
+        return '<div class="rulesec"><span class="secno">'+escapeHtml(secLabel(s))+'</span><p>'+escapeHtml(s.text)+'</p></div>';
+      }).join("") || '<p class="noref">No text available for this appendix.</p>';
+      return '<details class="artcard">' +
+        '<summary><span class="tag mono">'+artLabel(a, true)+'</span><span class="atitle">'+escapeHtml(a.title)+'</span><span class="acount">'+secs.length+' clauses</span></summary>' +
+        '<div class="secs">'+secsHtml+'</div>' +
+      '</details>';
+    }).join("");
+  }
 
-  artlist.innerHTML = ARTICLES.map(function(a){
-    var secs = secsByArticle[a.article_no] || [];
-    var tag = a.article_no.startsWith("App") ? "App " + a.article_no.slice(3) : "Art " + a.article_no;
-    var secsHtml = secs.map(function(s){
-      return '<div class="rulesec"><span class="secno">'+escapeHtml(secLabel(s))+'</span><p>'+escapeHtml(s.text)+'</p></div>';
-    }).join("") || '<p class="noref">No text available for this appendix.</p>';
-    return '<details class="artcard">' +
-      '<summary><span class="tag mono">'+tag+'</span><span class="atitle">'+escapeHtml(a.title)+'</span><span class="acount">'+secs.length+' clauses</span></summary>' +
-      '<div class="secs">'+secsHtml+'</div>' +
-    '</details>';
-  }).join("");
+  // ---- discipline switch ----
+  function setDiscipline(name){
+    dName = name;
+    D = DISCIPLINES[name];
+    try { localStorage.setItem("shugo.discipline", name); } catch (e) {}
+    document.querySelectorAll("#disciplineSwitch button").forEach(function(b){
+      b.classList.toggle("active", b.dataset.d === name);
+      b.setAttribute("aria-selected", b.dataset.d === name ? "true" : "false");
+    });
 
-  renderList();
+    secByKey = {};
+    D.sections.forEach(function(s){
+      var k = s.article_no + "|" + s.section_no;
+      if (!secByKey[k]) secByKey[k] = s;
+    });
+
+    var total = D.questions.length;
+    var trueCt = D.questions.filter(function(q){ return q.answer === "TRUE"; }).length;
+    document.getElementById("statsBox").innerHTML =
+      '<div class="stat"><span class="n mono">'+total+'</span><span class="l label">Questions</span></div>' +
+      '<div class="stat true"><span class="n mono">'+trueCt+'</span><span class="l label">True</span></div>' +
+      '<div class="stat false"><span class="n mono">'+(total - trueCt)+'</span><span class="l label">False</span></div>' +
+      '<div class="stat"><span class="n mono">'+D.articles.length+'</span><span class="l label">Rule sections</span></div>';
+    document.getElementById("brandBlurb").textContent = D.blurb;
+    document.getElementById("footerSources").innerHTML = D.sources;
+
+    artSel.innerHTML = '<option value="ALL">All articles</option>' + D.articles.map(function(a){
+      return '<option value="'+a.article_no+'">'+escapeHtml(artLabel(a) + " — " + a.title)+'</option>';
+    }).join("");
+    state.article = "ALL";
+    renderList();
+    renderRules();
+    resetExam();
+  }
+
+  document.getElementById("disciplineSwitch").addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if (btn && btn.dataset.d !== dName) setDiscipline(btn.dataset.d);
+  });
 
   // ==================== Practice Exam ====================
   var EXAM_SIZE = 70;
@@ -570,7 +649,7 @@
   }
 
   function startExam(){
-    var pool = shuffle(QUESTIONS.slice());
+    var pool = shuffle(D.questions.slice());
     examState = {
       questions: pool.slice(0, Math.min(EXAM_SIZE, pool.length)),
       idx: 0,
@@ -631,6 +710,7 @@
     var q = st.questions[st.idx];
     st.results.push({ q: q, yourAnswer: choice, correct: choice === q.answer });
     setTimeout(function(){
+      if (examState !== st) return; // discipline switched mid-exam
       st.idx++;
       if (st.idx >= st.questions.length) { finishExam(); }
       else { showExamQuestion(); }
@@ -653,11 +733,12 @@
 
     document.getElementById("scoreNum").textContent = correctCt;
     document.querySelector(".score-of").textContent = "/ " + total + " · " + pct + "%";
-    var verdict = pct >= 90 ? "Bench-ready — excellent command of the rules."
-      : pct >= 75 ? "Solid — a bit more review and you're there."
-      : pct >= 50 ? "Getting there — revisit the Rules Index for your misses below."
-      : "Keep studying — work through the missed clauses below.";
-    document.getElementById("scoreVerdict").textContent = verdict;
+    var passed = missed.length <= D.maxWrong;
+    var resultEl = document.getElementById("scoreResult");
+    resultEl.textContent = passed ? "PASS" : "FAIL";
+    resultEl.className = "score-result " + (passed ? "pass" : "fail");
+    document.getElementById("scoreVerdict").textContent =
+      missed.length + " wrong (unanswered included) — " + D.label + " allows at most " + D.maxWrong + " wrong to pass.";
     document.getElementById("scoreTrueAcc").textContent = trueAcc + "%";
     document.getElementById("scoreFalseAcc").textContent = falseAcc + "%";
     document.getElementById("scoreMissed").textContent = missed.length;
@@ -695,10 +776,21 @@
       if (!head) return;
       var li = head.closest(".qrow");
       var num = +li.dataset.num;
-      var q = QUESTIONS.find(function(x){ return x.num === num; });
+      var q = D.questions.find(function(x){ return x.num === num; });
       renderBody(li, q);
       li.classList.toggle("open");
     });
+  }
+
+  function resetExam(){
+    if (examState) clearInterval(examState.timer);
+    examState = null;
+    document.getElementById("examActive").hidden = true;
+    document.getElementById("examResults").hidden = true;
+    document.getElementById("examIntro").hidden = false;
+    document.getElementById("examIntroCount").textContent =
+      Math.min(EXAM_SIZE, D.questions.length) + " questions, drawn at random from the full " + D.questions.length + "-question " +
+      (dName === "kata" ? "Kata & Para Karate" : "Kumite") + " bank. Pass mark: at most " + D.maxWrong + " wrong.";
   }
 
   document.getElementById("examStartBtn").addEventListener("click", startExam);
@@ -711,5 +803,9 @@
     if (!btn || btn.disabled) return;
     submitExamAnswer(btn.dataset.choice, btn);
   });
+
+  var saved = null;
+  try { saved = localStorage.getItem("shugo.discipline"); } catch (e) {}
+  setDiscipline(DISCIPLINES[saved] ? saved : "kumite");
 })();
 </script>
