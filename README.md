@@ -24,7 +24,7 @@ against the **WKF Kumite Competition Rules** (v2026.01, 18 articles + 6 appendic
 - **Rules Index** — the full rulebook parsed into 371 numbered clauses, browsable by article.
 - **Practice Exam** — 70 random questions, each answered True/False within 10 seconds (no
   answer in time counts as wrong); ends with PASS/FAIL, a score and a review of missed questions.
-  Pass mark: at most 7 wrong for Kumite, at most 5 wrong for Kata. Nothing is persisted.
+  Pass mark: all 70 correct for both Kumite and Kata (any wrong or unanswered question is a fail). Nothing is persisted.
 
 The Kata bank (132 questions, EN/FR/ES, version 07/2026) is in the database with a verdict, rule
 reference and one-line explanation for each question; Q22 and Q107–132 are answered from the WKF

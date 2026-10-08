@@ -410,14 +410,14 @@
   var DISCIPLINES = {
     kumite: {
       questions: QUESTIONS, articles: ARTICLES, sections: SECTIONS,
-      label: "Kumite", maxWrong: 7,   // pass mark: 8 or more wrong is a fail
+      label: "Kumite", maxWrong: 0,   // pass mark: all questions correct; any wrong answer is a fail
       blurb: "WKF Kumite examination questions, cross-referenced verdict by verdict against the 2026 Competition Rules — one bench, two documents.",
       rulesNote: "Full text of the WKF Kumite Competition Rules (v2026.01), parsed into {n} numbered provisions and appendix entries across 18 articles and 6 appendices.",
       sources: "Source documents: <em>WKF Kumite Examination Questions</em> (v07/2026.1) and <em>WKF Kumite Competition Rules</em> (v2026.01)."
     },
     kata: {
       questions: KATA_QUESTIONS, articles: KATA_ARTICLES, sections: KATA_SECTIONS,
-      label: "Kata", maxWrong: 5,     // pass mark: 6 or more wrong is a fail
+      label: "Kata", maxWrong: 0,     // pass mark: all questions correct; any wrong answer is a fail
       blurb: "WKF Kata & Para Karate examination questions, cross-referenced verdict by verdict against the 2026 Kata and Para Karate Kata Rules — one bench, three documents.",
       rulesNote: "Full text of the WKF Kata Competition Rules (v2026.0) and the WKF Para Karate Kata Competition Rules (v2026.0), parsed into {n} numbered provisions and appendix entries. Para Karate articles are marked “Para”.",
       sources: "Source documents: <em>WKF Kata &amp; Para Karate Examination Questions</em> (v07/2026), <em>WKF Kata Competition Rules</em> (v2026.0) and <em>WKF Para Karate Kata Competition Rules</em> (v2026.0)."
@@ -738,7 +738,7 @@
     resultEl.textContent = passed ? "PASS" : "FAIL";
     resultEl.className = "score-result " + (passed ? "pass" : "fail");
     document.getElementById("scoreVerdict").textContent =
-      missed.length + " wrong (unanswered included) — " + D.label + " allows at most " + D.maxWrong + " wrong to pass.";
+      missed.length + " wrong (unanswered included) — " + passMarkText(total) + ".";
     document.getElementById("scoreTrueAcc").textContent = trueAcc + "%";
     document.getElementById("scoreFalseAcc").textContent = falseAcc + "%";
     document.getElementById("scoreMissed").textContent = missed.length;
@@ -782,6 +782,12 @@
     });
   }
 
+  function passMarkText(total){
+    return D.maxWrong === 0
+      ? D.label + " requires all " + total + " correct to pass"
+      : D.label + " allows at most " + D.maxWrong + " wrong to pass";
+  }
+
   function resetExam(){
     if (examState) clearInterval(examState.timer);
     examState = null;
@@ -790,7 +796,7 @@
     document.getElementById("examIntro").hidden = false;
     document.getElementById("examIntroCount").textContent =
       Math.min(EXAM_SIZE, D.questions.length) + " questions, drawn at random from the full " + D.questions.length + "-question " +
-      (dName === "kata" ? "Kata & Para Karate" : "Kumite") + " bank. Pass mark: at most " + D.maxWrong + " wrong.";
+      (dName === "kata" ? "Kata & Para Karate" : "Kumite") + " bank. Pass mark: " + passMarkText(Math.min(EXAM_SIZE, D.questions.length)) + ".";
   }
 
   document.getElementById("examStartBtn").addEventListener("click", startExam);
