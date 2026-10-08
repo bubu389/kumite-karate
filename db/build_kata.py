@@ -240,7 +240,7 @@ ANSWERS = [
     (30, "FALSE", "Art. 2.2.1(h)", "Female Athletes CAN wear a plain white T-shirt; it is optional, not mandatory."),
     (31, "TRUE", "Art. 2.2.1(h)", "Female Athletes can wear a plain white T-shirt beneath the jacket."),
     (32, "TRUE", "Art. 2.2.7", "The wearing of any unauthorised apparel, clothing or equipment is forbidden."),
-    (33, "TRUE", "Art. 2.2.6", "One or two discreet rubber bands on a single ponytail are permitted."),
+    (33, "FALSE", "Art. 2.2.6", "Only one or two discreet rubber bands on a single ponytail are permitted; a ponytail retainer (clip) is not - hair slides and metal hairgrips are prohibited. The \"rubber band or pony tail retainer\" wording was dropped after the 2012 rules."),
     (34, "FALSE", "Art. 1.1 / 1.5", "Kata uses the same WKF Approved 8 m matted square as Kumite (see the Art. 1.5 illustration)."),
     (35, "FALSE", "Art. 2.2.1(i) / 2.2.7", "The jacket ties must be tied at the start of the performance; nothing permits removing the jacket."),
     (36, "TRUE", "Art. 5.7 (foul 6)", "Theatrics are very serious fouls, on the same level as a major loss of balance."),
